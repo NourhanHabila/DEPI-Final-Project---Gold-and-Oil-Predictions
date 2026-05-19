@@ -811,7 +811,7 @@ elif page == "🤖 AI Model":
     ">
         <span style="color:#e3b341;font-weight:700;font-size:0.95rem;">⚠️ Disclaimer</span><br>
         <span style="color:#c9d1d9;font-size:0.88rem;">
-        In this graph and in order to showcase and demonstrate our work, we used the basic models for oil and gold
+        In this graph and in order to show case and demonstrate our work, we used the basic models for oil and gold
         <b style="color:#f0f6fc;">(standalone top features model)</b> which are the inputs for the stock markets' models we have.
         </span>
     </div>
