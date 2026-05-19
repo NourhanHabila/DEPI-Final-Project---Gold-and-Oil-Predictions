@@ -6,7 +6,9 @@ from plotly.subplots import make_subplots
 import numpy as np
 import os
 
+# ─────────────────────────────────────────────
 # PAGE CONFIG
+# ─────────────────────────────────────────────
 st.set_page_config(
     page_title="Egypt Financial Dashboard",
     page_icon="🇪🇬",
@@ -14,7 +16,9 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+# ─────────────────────────────────────────────
 # THEME / CSS
+# ─────────────────────────────────────────────
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
@@ -93,7 +97,9 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# ─────────────────────────────────────────────
 # CHART DEFAULTS
+# ─────────────────────────────────────────────
 CHART_BG   = "#0d1117"
 PAPER_BG   = "#0d1117"
 GRID_COLOR = "#21262d"
@@ -114,7 +120,9 @@ def base_layout(title="", height=400, **kw):
         **kw
     )
 
+# ─────────────────────────────────────────────
 # DATA LOADERS
+# ─────────────────────────────────────────────
 DATA_DIR = os.path.dirname(os.path.abspath(__file__))
 
 @st.cache_data
@@ -132,7 +140,7 @@ def load_all():
         inf[c] = pd.to_numeric(inf[c], errors="coerce")
     data["inflation"] = inf
 
-    # EGP/USD CBE xlsx
+    # --- EGP/USD CBE xlsx ---
     egp = pd.read_excel(os.path.join(DATA_DIR, "egy_cbe_egpusd_rate.xlsx"), header=None)
     egp.columns = ["date","rate"]
     egp = egp[egp["date"].astype(str).str.strip() != "Date"].copy()
@@ -141,14 +149,14 @@ def load_all():
     egp = egp.dropna().sort_values("date").reset_index(drop=True)
     data["egpusd"] = egp
 
-    # CPI
+    # --- CPI ---
     cpi = pd.read_csv(os.path.join(DATA_DIR, "egy_cpi.csv"))
     cpi.columns = ["year","cpi"]
     cpi["year"] = pd.to_numeric(cpi["year"], errors="coerce")
     cpi = cpi.dropna().sort_values("year").reset_index(drop=True)
     data["cpi"] = cpi
 
-    # Egyptian Gold (raw format from investing.com)
+    # --- Egyptian Gold (raw format from investing.com) ---
     eg_gold = pd.read_csv(os.path.join(DATA_DIR, "egy_gold_prices.csv"))
     # Normalise column names whether raw or cleaned
     eg_gold.columns = eg_gold.columns.str.strip()
@@ -188,14 +196,14 @@ def load_all():
         df = df.dropna(subset=["date"]).sort_values("date").reset_index(drop=True)
         return df
 
-    # Global Gold
+    # --- Global Gold ---
     data["global_gold"] = load_yf_csv(os.path.join(DATA_DIR, "global_gold_prices.csv"))
 
-    # Oil prices
+    # --- Oil prices ---
     data["brent"] = load_yf_csv(os.path.join(DATA_DIR, "global_brent_oil_prices.csv"))
     data["wti"]   = load_yf_csv(os.path.join(DATA_DIR, "global_wti_price_prices.csv"))
 
-    # OPEC (monthly, may not have date column)
+    # --- OPEC (monthly, may not have date column) ---
     opec_raw = pd.read_csv(os.path.join(DATA_DIR, "opec_oil_prices.csv"))
     opec_raw.columns = opec_raw.columns.str.strip()
     # Rename date column if present
@@ -211,12 +219,12 @@ def load_all():
     opec_raw["price_usd"] = pd.to_numeric(opec_raw[price_col], errors="coerce") if price_col else np.nan
     data["opec"] = opec_raw[["date","price_usd"]].dropna().sort_values("date").reset_index(drop=True)
 
-    # Avg brent in budget
+    # --- Avg brent in budget ---
     budget_brent = pd.read_csv(os.path.join(DATA_DIR, "egy_avg_brent_price_in_budget.csv"))
     budget_brent.columns = budget_brent.columns.str.strip()
     data["budget_brent"] = budget_brent
 
-    # Subsidies
+    # --- Subsidies ---
     elec = pd.read_excel(os.path.join(DATA_DIR, "egy_subsidies_on_electricity_expected_vs_actual.xlsx"))
     elec.columns = ["year","planned_elec","actual_elec"]
     elec["year"] = elec["year"].astype(str).str.strip()
@@ -227,7 +235,7 @@ def load_all():
     petro["year"] = petro["year"].astype(str).str.strip()
     data["sub_petro"] = petro
 
-    # FX rates (raw yfinance or cleaned)
+    # --- FX rates (raw yfinance or cleaned) ---
     fx_files = {
         "EUR/USD": "global_eurusd_rate_prices.csv",
         "GBP/USD": "global_gbpusd_rate_prices.csv",
@@ -246,7 +254,9 @@ def load_all():
 
 data = load_all()
 
+# ─────────────────────────────────────────────
 # SIDEBAR
+# ─────────────────────────────────────────────
 with st.sidebar:
     st.markdown("## 🇪🇬 Egypt Finance")
     st.markdown("**Gold & Oil Prediction System**")
@@ -255,7 +265,7 @@ with st.sidebar:
     page = st.radio(
         "Navigate",
         ["🏠 Overview", "📈 Inflation & CPI", "💱 Exchange Rates",
-         "🥇 Gold Prices", "🛢️ Oil Prices", "💰 Budget & Subsidies", "🔗 Correlations",
+         "🥇 Gold Prices", "🛢️ Oil Prices", "🔗 Correlations",
          "🤖 AI Model", "📊 Stock Markets"],
         label_visibility="collapsed"
     )
@@ -270,15 +280,19 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("<small style='color:#444'>Egypt Macroeconomic Intelligence</small>", unsafe_allow_html=True)
 
+# ─────────────────────────────────────────────
 # HELPER: filter by date
+# ─────────────────────────────────────────────
 def filt(df, col="date"):
     if col in df.columns:
         return df[(df[col] >= date_start) & (df[col] <= date_end)]
     return df
 
-# PAGES
+# ─────────────────────────────────────────────
+# ══════════════ PAGES ════════════════════════
+# ─────────────────────────────────────────────
 
-# OVERVIEW
+# ── OVERVIEW ──────────────────────────────────
 if page == "🏠 Overview":
     st.markdown('<div class="page-title"><span class="page-title-icon">🇪🇬</span><span class="page-title-text">Egypt Financial Dashboard</span><span class="page-title-sub">Macroeconomic &amp; Market Data · 2016 – 2026</span></div>', unsafe_allow_html=True)
     st.markdown("<p>Macroeconomic & Market Data · 2016 – 2026</p>", unsafe_allow_html=True)
@@ -387,7 +401,7 @@ if page == "🏠 Overview":
         <span style="color:#c9d1d9;font-size:0.85rem;">The negative WTI price in April 2020 is real market data, not an error. It occurred due to a historic collapse in global demand during the COVID-19 pandemic combined with storage capacity reaching its limit.</span>
     </div>''', unsafe_allow_html=True)
 
-# INFLATION & CPI
+# ── INFLATION & CPI ────────────────────────────
 elif page == "📈 Inflation & CPI":
     st.markdown('<div class="page-title"><span class="page-title-icon">📈</span><span class="page-title-text">Inflation &amp; CPI</span><span class="page-title-sub">CBE Monthly · IMF Annual · Heatmap Analysis</span></div>', unsafe_allow_html=True)
 
@@ -455,7 +469,7 @@ elif page == "📈 Inflation & CPI":
             use_container_width=True, hide_index=True
         )
 
-# EXCHANGE RATES
+# ── EXCHANGE RATES ─────────────────────────────
 elif page == "💱 Exchange Rates":
     st.markdown('<div class="page-title"><span class="page-title-icon">💱</span><span class="page-title-text">Exchange Rates</span><span class="page-title-sub">EGP/USD Official Rate · Global FX Comparison</span></div>', unsafe_allow_html=True)
 
@@ -532,7 +546,7 @@ elif page == "💱 Exchange Rates":
                     })
             st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
 
-# GOLD PRICES
+# ── GOLD PRICES ────────────────────────────────
 elif page == "🥇 Gold Prices":
     st.markdown('<div class="page-title"><span class="page-title-icon">🥇</span><span class="page-title-text">Gold Prices</span><span class="page-title-sub">Global USD · Candlestick Charts · Price Analysis</span></div>', unsafe_allow_html=True)
 
@@ -632,88 +646,7 @@ elif page == "🛢️ Oil Prices":
         st.plotly_chart(fig, use_container_width=True)
         st.dataframe(bb, use_container_width=True, hide_index=True)
 
-# BUDGET & SUBSIDIES 
-elif page == "💰 Budget & Subsidies":
-    st.markdown('<div class="page-title"><span class="page-title-icon">💰</span><span class="page-title-text">Budget &amp; Subsidies</span><span class="page-title-sub">Petroleum · Electricity · Planned vs Actual</span></div>', unsafe_allow_html=True)
-
-    sub_e = data["sub_elec"].copy()
-    sub_p = data["sub_petro"].copy()
-    for c in ["planned_elec","actual_elec"]:
-        sub_e[c] = pd.to_numeric(sub_e[c], errors="coerce")
-    for c in ["planned_petro","actual_petro"]:
-        sub_p[c] = pd.to_numeric(sub_p[c], errors="coerce")
-
-    tab1, tab2, tab3 = st.tabs(["Petroleum Subsidies", "Electricity Subsidies", "Combined View"])
-
-    with tab1:
-        st.markdown('<div class="section-header">Petroleum Subsidies: Planned vs Actual (EGP Millions)</div>', unsafe_allow_html=True)
-        fig = go.Figure()
-        fig.add_trace(go.Bar(x=sub_p["year"], y=sub_p["planned_petro"], name="Planned",
-                              marker_color=COLORS[0], opacity=0.8))
-        fig.add_trace(go.Bar(x=sub_p["year"], y=sub_p["actual_petro"],  name="Actual",
-                              marker_color=COLORS[3], opacity=0.9))
-        fig.update_layout(**base_layout(height=420), barmode="group")
-        fig.update_yaxes(tickformat=",")
-        st.plotly_chart(fig, use_container_width=True)
-
-        sub_p["variance"] = sub_p["actual_petro"] - sub_p["planned_petro"]
-        sub_p["var_%"] = (sub_p["variance"] / sub_p["planned_petro"] * 100).round(1)
-        st.markdown('<div class="section-header">Variance (Actual – Planned)</div>', unsafe_allow_html=True)
-        fig2 = go.Figure(go.Bar(
-            x=sub_p["year"], y=sub_p["variance"],
-            marker_color=[COLORS[3] if v > 0 else COLORS[1] for v in sub_p["variance"]],
-            text=sub_p["var_%"].astype(str)+"%", textposition="outside"
-        ))
-        fig2.update_layout(**base_layout(height=340))
-        st.plotly_chart(fig2, use_container_width=True)
-
-    with tab2:
-        st.markdown('<div class="section-header">Electricity Subsidies: Planned vs Actual (EGP Millions)</div>', unsafe_allow_html=True)
-        fig = go.Figure()
-        fig.add_trace(go.Bar(x=sub_e["year"], y=sub_e["planned_elec"], name="Planned",
-                              marker_color=COLORS[4], opacity=0.8))
-        fig.add_trace(go.Bar(x=sub_e["year"], y=sub_e["actual_elec"],  name="Actual",
-                              marker_color=COLORS[2], opacity=0.9))
-        fig.update_layout(**base_layout(height=420), barmode="group")
-        fig.update_yaxes(tickformat=",")
-        st.plotly_chart(fig, use_container_width=True)
-
-    with tab3:
-        merged_sub = pd.merge(sub_p, sub_e, on="year", how="outer")
-        merged_sub["total_planned"] = merged_sub["planned_petro"].fillna(0) + merged_sub["planned_elec"].fillna(0)
-        merged_sub["total_actual"]  = merged_sub["actual_petro"].fillna(0)  + merged_sub["actual_elec"].fillna(0)
-
-        st.markdown('<div class="section-header">Total Subsidies (Petroleum + Electricity)</div>', unsafe_allow_html=True)
-        fig = make_subplots(specs=[[{"secondary_y": True}]])
-        fig.add_trace(go.Bar(x=merged_sub["year"], y=merged_sub["total_planned"],
-                              name="Total Planned", marker_color=COLORS[0], opacity=0.8), secondary_y=False)
-        fig.add_trace(go.Bar(x=merged_sub["year"], y=merged_sub["total_actual"],
-                              name="Total Actual",  marker_color=COLORS[3], opacity=0.9), secondary_y=False)
-        fig.update_layout(**base_layout(height=450), barmode="group")
-        fig.update_yaxes(tickformat=",")
-        st.plotly_chart(fig, use_container_width=True)
-
-        # Pie chart — use latest year with actual data available
-        latest_planned = merged_sub.dropna(subset=["planned_petro","planned_elec"]).iloc[-1]
-        latest_actual  = merged_sub.dropna(subset=["actual_petro","actual_elec"]).iloc[-1]
-        st.markdown(f'<div class="section-header">Subsidy Mix — Planned: {latest_planned["year"]} | Actual: {latest_actual["year"]}</div>', unsafe_allow_html=True)
-        c1, c2 = st.columns(2)
-        for col, label, petro_val, elec_val, yr in [
-            (c1, "Planned", latest_planned["planned_petro"], latest_planned["planned_elec"], latest_planned["year"]),
-            (c2, "Actual",  latest_actual["actual_petro"],   latest_actual["actual_elec"],   latest_actual["year"])
-        ]:
-            figP = go.Figure(go.Pie(
-                labels=["Petroleum","Electricity"],
-                values=[petro_val, elec_val],
-                marker_colors=[COLORS[2], COLORS[4]],
-                hole=0.4
-            ))
-            figP.update_layout(paper_bgcolor=PAPER_BG, font=dict(color=FONT_COLOR),
-                                height=280, margin=dict(t=30,b=10,l=10,r=10),
-                                title=dict(text=f"{label} ({yr})", font=dict(color=FONT_COLOR)))
-            col.plotly_chart(figP, use_container_width=True)
-
-# CORRELATIONS
+# ── BUDGET & SUBSIDIES ─────────────────────────
 elif page == "🔗 Correlations":
     st.markdown('<div class="page-title"><span class="page-title-icon">🔗</span><span class="page-title-text">Correlation Analysis</span><span class="page-title-sub">Matrix · Scatter · Dual-Axis Time Series</span></div>', unsafe_allow_html=True)
 
@@ -783,7 +716,7 @@ elif page == "🔗 Correlations":
     figD.update_yaxes(title_text=y_var, gridcolor=GRID_COLOR, secondary_y=True)
     st.plotly_chart(figD, use_container_width=True)
 
-# AI MODEL
+# ── AI MODEL ───────────────────────────────────
 elif page == "🤖 AI Model":
     import pickle, warnings
     warnings.filterwarnings("ignore")
@@ -879,6 +812,24 @@ elif page == "🤖 AI Model":
             df_sim = pd.concat([df_sim, new_row], ignore_index=True)
 
         return pd.DataFrame(predictions)
+
+    # ── Disclaimer ───────────────────────────────────────
+    st.markdown("""
+    <div style="
+        background: linear-gradient(90deg, #1a1a2e, #16213e);
+        border: 1px solid #e3b341;
+        border-left: 5px solid #e3b341;
+        border-radius: 8px;
+        padding: 0.8rem 1.2rem;
+        margin-bottom: 1rem;
+    ">
+        <span style="color:#e3b341;font-weight:700;font-size:0.95rem;">⚠️ Disclaimer</span><br>
+        <span style="color:#c9d1d9;font-size:0.88rem;">
+        In this graph and in order to showcase and demonstrate our work, we used the basic models for oil and gold
+        <b style="color:#f0f6fc;">(standalone top features model)</b> which are the inputs for the stock markets' models we have.
+        </span>
+    </div>
+    """, unsafe_allow_html=True)
 
     tab_gold, tab_oil, tab_perf = st.tabs(["🥇 Gold Prediction", "🛢️ Oil Prediction", "📊 Model Performance"])
 
@@ -991,7 +942,7 @@ elif page == "🤖 AI Model":
 
         DATA_DIR_AI = os.path.dirname(os.path.abspath(__file__))
 
-        # Gold Model Performance 
+        # ── Gold Model Performance ─────────────────────
         st.markdown('<div class="section-header">🥇 Gold Price Forecasting — Model Results</div>', unsafe_allow_html=True)
 
         # Gold metrics
@@ -1031,7 +982,7 @@ elif page == "🤖 AI Model":
 
         st.markdown("")
 
-        # Oil Model Performance
+        # ── Oil Model Performance ──────────────────────
         st.markdown('<div class="section-header">🛢️ Brent Oil Forecasting — Model Results</div>', unsafe_allow_html=True)
 
         k1, k2, k3, k4 = st.columns(4)
@@ -1070,7 +1021,7 @@ elif page == "🤖 AI Model":
 
         st.markdown("")
 
-        # Correlation Heatmap
+        # ── Correlation Heatmap ────────────────────────
         st.markdown('<div class="section-header">🔗 Feature Correlation Heatmap</div>', unsafe_allow_html=True)
         corr_img_path = os.path.join(DATA_DIR_AI, "correlation_heatmap.png")
         if os.path.exists(corr_img_path):
@@ -1081,7 +1032,7 @@ elif page == "🤖 AI Model":
 
         st.markdown("")
 
-        # Model Comparison Table
+        # ── Model Comparison Table ─────────────────────
         st.markdown('<div class="section-header">📋 Model Comparison Summary</div>', unsafe_allow_html=True)
         import pandas as pd
         comparison = pd.DataFrame({
@@ -1096,7 +1047,7 @@ elif page == "🤖 AI Model":
         st.dataframe(comparison, use_container_width=True, hide_index=True)
         st.caption("✅ Top-feature models outperform full-feature models on all metrics — less overfitting, better generalization.")
 
-# STOCK MARKETS
+# ── STOCK MARKETS ──────────────────────────────
 elif page == "📊 Stock Markets":
     import pickle, warnings
     warnings.filterwarnings("ignore")
@@ -1219,7 +1170,7 @@ elif page == "📊 Stock Markets":
 
     df_stocks = load_stocks_data()
 
-    # All Markets Snapshot
+    # ── All Markets Snapshot ────────────────────────
     st.markdown('<div class="section-header">🌍 All Markets — Current Snapshot</div>', unsafe_allow_html=True)
     snap_rows = []
     for mname, mdata in MARKETS.items():
@@ -1237,7 +1188,7 @@ elif page == "📊 Stock Markets":
 
     st.markdown("")
 
-    # Market Selector — Cards
+    # ── Market Selector — Cards ─────────────────────
     st.markdown('<div class="section-header">🔮 7-Day Price Forecast — Select a Market</div>', unsafe_allow_html=True)
 
     # CSS for market cards
